@@ -11,11 +11,12 @@ import SceneKit
 import ARKit
 
 class ViewController: UIViewController, ARSCNViewDelegate {
-
+    
     @IBOutlet var sceneView: ARSCNView!
     var didAddNode = false
     var planePosition = SCNVector3(0, 0, 0)
     var main = SCNNode()
+    var hasTouched = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -45,7 +46,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Pause the view's session
         sceneView.session.pause()
     }
-
+    
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         if !didAddNode{
             guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
@@ -106,23 +107,38 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     // MARK: - ARSCNViewDelegate
     
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        let node = SCNNode()
+    /*
+     // Override to create and configure nodes for anchors added to the view's session.
+     func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
+     let node = SCNNode()
      
-        return node
-    }
-*/
+     return node
+     }
+     */
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         let box = SCNBox(width: 0.1, height: 0.1, length: 0.1, chamferRadius: 0)
         box.materials.first?.diffuse.contents = UIColor.red
+        
         var boxNode = SCNNode(geometry: box)
-        boxNode.position = SCNVector3(planePosition.x, planePosition.y + 0.5, planePosition.z)
-        main.addChildNode(boxNode)
-        update(&boxNode, geometry: box, type: .dynamic)
+        
+        if !hasTouched {
+            boxNode.position = SCNVector3(planePosition.x, planePosition.y + 0.5, planePosition.z)
+            main.addChildNode(boxNode)
+            update(&boxNode, geometry: box, type: .dynamic)
+           
+        } else {
+            var touch = touches.first as! UITouch
+            var point = touch.location(in: self.view)
+            
+            if point.x < view.frame.width / 2 {
+                boxNode.physicsBody?.applyForce(SCNVector3(-0.1, 10, 0), asImpulse: true)
+            } else {
+                boxNode.physicsBody?.applyForce(SCNVector3(0.1, 1, 0), asImpulse: true)
+            }
+        }
+        
+        hasTouched = true
     }
-    
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
         
